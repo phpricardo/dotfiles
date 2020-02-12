@@ -1,0 +1,37 @@
+rails = File.join(Dir.getwd, 'config', 'environment.rb')
+
+if File.exist?(rails) && ENV['SKIP_RAILS'].nil?
+  require rails
+
+  def fb
+    puts 'Loading FactoryBot...'
+    require 'factory_bot'
+
+    begin
+      require 'faker'
+      puts 'Faker loaded!'
+    rescue LoadError => e
+      require 'ffaker'
+      puts 'FFaker loaded!'
+    rescue LoadError => e
+      puts "=> Unable to load [F]Faker (#{e})"
+    end
+
+    FactoryBot.factories.clear
+
+    factory_bot_paths = [
+      'spec/factories.rb',
+      'spec/support/factories.rb',
+      *Dir['spec/factories/**/*.rb']
+    ]
+
+    factory_bot_paths.each do |path|
+      file = File.join(Rails.root, path)
+      load(File.join(Rails.root, path)) if File.exist?(file)
+    end
+
+    include FactoryBot::Syntax::Methods
+
+    true
+  end
+end

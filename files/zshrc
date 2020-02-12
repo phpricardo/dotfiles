@@ -1,0 +1,419 @@
+ZSH=$HOME/.oh-my-zsh
+
+source ~/.rvm/scripts/rvm
+############################################## Theme ##############################################
+
+# Look in ~/.oh-my-zsh/themes/
+
+if [[ "$ITERM_PROFILE" == "Course" ]]; then
+  ZSH_THEME='fletcherm'
+else
+  ZSH_THEME='powerlevel9k/powerlevel9k'
+
+  POWERLEVEL9K_MODE="nerdfont-complete"
+
+  POWERLEVEL9K_LEFT_PROMPT_ELEMENTS=(ssh dir custom_ruby custom_rails node_version vcs custom_rspec)
+  POWERLEVEL9K_RIGHT_PROMPT_ELEMENTS=(status)
+
+  POWERLEVEL9K_PROMPT_ON_NEWLINE=true
+  POWERLEVEL9K_PROMPT_ADD_NEWLINE=true
+  POWERLEVEL9K_RPROMPT_ON_NEWLINE=true
+
+  POWERLEVEL9K_LEFT_SEGMENT_SEPARATOR='\uE0B4'
+  POWERLEVEL9K_RIGHT_SEGMENT_SEPARATOR='\uE0B6'
+
+  POWERLEVEL9K_MULTILINE_FIRST_PROMPT_PREFIX="╭"
+  POWERLEVEL9K_MULTILINE_LAST_PROMPT_PREFIX="╰\uF460 "
+
+  POWERLEVEL9K_CUSTOM_RUBY_BACKGROUND="red"
+  POWERLEVEL9K_CUSTOM_RUBY_FOREGROUND="black"
+
+  POWERLEVEL9K_CUSTOM_RAILS_BACKGROUND="red"
+  POWERLEVEL9K_CUSTOM_RAILS_FOREGROUND="black"
+
+  POWERLEVEL9K_NODE_ICON="⬢"
+  POWERLEVEL9K_NODE_VERSION_BACKGROUND="teal"
+  POWERLEVEL9K_NODE_VERSION_FOREGROUND="black"
+
+  POWERLEVEL9K_CUSTOM_RSPEC_BACKGROUND="white"
+  POWERLEVEL9K_CUSTOM_RSPEC_FOREGROUND="black"
+fi
+
+set_powerlevel9k_custom_env_vars() {
+  POWERLEVEL9K_CUSTOM_RUBY="echo -n '' `ruby --version | sed -E 's/ruby (.+)p.+/\1/g'`"
+
+  if [ -f Gemfile.lock ]; then
+    POWERLEVEL9K_CUSTOM_RAILS="echo -n '' `cat Gemfile.lock | grep -E ' +rails \([0-9]+' | \
+      sed 's/ *rails (\(.*\))/\1/'`"
+
+    POWERLEVEL9K_CUSTOM_RSPEC="if [ -d spec/ ] && [ `grep -re '[,[:space:]]focus\(:\| =>\)[[:space:]]\?true' spec \
+      --exclude spec/spec_helper.rb --exclude spec/rails_helper.rb &> /dev/null | \
+      wc -l | awk '{ print $1 }'` != '0' ]; then; echo -n '🎯  RSpec with focus'; fi"
+  else
+    POWERLEVEL9K_CUSTOM_RAILS=""
+    POWERLEVEL9K_CUSTOM_RSPEC=""
+  fi
+}
+
+############################################# Plugins #############################################
+
+# Which plugins would you like to load? (plugins can be found in ~/.oh-my-zsh/custom/plugins/)
+if [[ "$ITERM_PROFILE" != "Course" ]]; then
+plugins=(
+  zsh-syntax-highlighting
+  zsh-autosuggestions
+)
+fi
+
+######################################### General Settings #########################################
+
+# The following needs to run before oh-my-zsh
+if type brew &>/dev/null; then
+  FPATH=$(brew --prefix)/share/zsh/site-functions:$FPATH
+fi
+
+source $ZSH/oh-my-zsh.sh
+
+# Making zsh parse calls correctly
+# More info: https://github.com/thoughtbot/dotfiles/pull/194/files
+unsetopt nomatch
+
+# macOS Sierra has removed the ability to remember your SSH keys across reboot in order to conform
+# to mainstream OpenSSH behavior. More info: http://superuser.com/q/1127067/667812
+# The following line solves this problem
+ssh-add -A &> /dev/null
+
+# Defang naughty commands; the entire history entry is in $1
+# http://unix.stackexchange.com/a/312539
+function zshaddhistory() {
+  if [[ $1 =~ "^ " ]]; then
+    return 0
+  elif [[ $1 =~ "cp\ *|mv\ *|rm\ *|cat\ *\>|pv\ *|dd\ *" ]]; then
+    1="# $1"
+  fi
+  # write to usual history location
+  print -sr -- ${1%%$'\n'}
+  # do not save the history line. if you have a chain of zshaddhistory
+  # hook functions, this may be more complicated to manage, depending
+  # on what those other hooks do (man zshall | less -p zshaddhistory)
+  return 1
+}
+
+############################################# Export #############################################
+
+export ZSH_AUTOSUGGEST_HIGHLIGHT_STYLE='fg=240'
+
+case $OSTYPE in
+  linux-gnu)
+    export EDITOR='vim -f'
+    export GEM_EDITOR='vim -f'
+    ;;
+  darwin*)
+    export EDITOR='code --wait' # mvim -f
+    export GEM_EDITOR='code --wait' # mvim -f
+    ;;
+esac
+
+# asdf (multiple runtime versions manager) - https://asdf-vm.com/
+case $OSTYPE in
+  darwin*)
+    . /usr/local/opt/asdf/asdf.sh
+    . /usr/local/opt/asdf/etc/bash_completion.d/asdf.bash
+    ;;
+esac
+
+case $OSTYPE in
+  darwin*)
+    export PATH="$PATH:/Applications/Visual Studio Code.app/Contents/Resources/app/bin"
+    export PATH="$PATH:/usr/local/sbin" # Homebrew
+    export PATH="$PATH:$(yarn global bin)" # Yarn global modules
+
+    # Android
+    export ANDROID_HOME=$HOME/Library/Android/sdk
+    export PATH=$PATH:$ANDROID_HOME/emulator
+    export PATH=$PATH:$ANDROID_HOME/tools
+    export PATH=$PATH:$ANDROID_HOME/tools/bin
+    export PATH=$PATH:$ANDROID_HOME/platform-tools
+    ;;
+esac
+
+# PostgreSQL
+export PGHOST=localhost
+
+case $OSTYPE in
+  linux-gnu)
+    export LANGUAGE=en_US.UTF-8
+    export LANG=en_US.UTF-8
+    export LC_ALL=en_US.UTF-8
+
+    # if ! dpkg -l ubuntu-desktop &> /dev/null; then # Only set this env var on Ubuntu Server
+    #   export RAILS_ENV=production
+    # fi
+    ;;
+  darwin*)
+    export CLICOLOR='auto'
+    export ARCHFLAGS='-arch x86_64' # Compilation flags
+    ;;
+esac
+
+# Docker
+export DOCKER_BUILDKIT=1
+
+######################################## Personal configs ########################################
+
+if [[ -s $HOME/.personal_configs ]]; then source $HOME/.personal_configs; fi
+
+if [ -d $HOME/Dropbox/.personal_configs ]; then
+  for file in $HOME/Dropbox/.personal_configs/*; do source $file; done
+fi
+
+############################################ Aliases #############################################
+
+if [[ "$ITERM_PROFILE" != "Course" ]]; then
+  # Git
+  alias g='git status'
+  alias gc='git commit --no-edit'
+  alias gl='git log --graph --pretty=format:'\''%Cred%h%Creset -%C(yellow)%d%Creset %Cblue%an%Creset - %s %Cgreen(%cr)%Creset'\'' --abbrev-commit --date=relative'
+  alias gls='git log --graph --pretty=format:'\''%s'\'' --abbrev-commit --date=relative --author="`git config --get user.name`"'
+  alias gd='git --no-pager diff'
+  alias gdc='git --no-pager diff --cached'
+  alias gds='git --no-pager diff HEAD\^ HEAD'
+  alias gm='git merge --no-edit'
+  alias gmu='git fetch upstream && git merge upstream/master'
+  alias ga='git add'
+  alias gaa='git add --all'
+  alias gr='git rm'
+  alias gp='git pull --rebase --prune'
+  alias gb='git branch'
+  alias gba='git branch -a'
+  alias gbd='git branch -d'
+  alias gbD='git branch -D'
+  alias push='git push'
+  alias fpush='git push --force-with-lease'
+fi
+
+# Ruby / Rails
+if [[ "$ITERM_PROFILE" != "Course" ]]; then
+  alias be='bundle exec'
+  alias rs='rails s'
+  alias rc='rails c'
+  alias rg='rails g'
+  alias migrate='rails db:migrate && rails db:test:prepare'
+  alias assets='rails assets:clean assets:precompile'
+  alias rspec='bundle exec rspec'
+  alias cap='bundle exec cap' # Capistrano
+  alias transpec='bundle exec transpec -v example_group,hook_scope,stub_with_hash --explicit-spec-type -f spec'
+  alias massa='bundle exec massa'
+  alias sidekiq='bundle exec sidekiq'
+  alias cucumber='bundle exec cucumber'
+  alias rubocop='bundle exec rubocop'
+  alias fs='foreman start'
+  alias cop='git status --porcelain | awk '\''$1 ~ /A|M/ && $NF ~ /\.rb$/ { print $NF }'\'' | xargs rubocop --force-exclusion'
+fi
+
+# Usage example: `js 2` to load only last 2 posts
+js() {
+  bundle exec jekyll clean
+
+  if [ "$1" == "" ]; then
+    bundle exec jekyll serve --host=0.0.0.0 --drafts --incremental
+  else
+    echo "### Loading only last $1 posts"
+    bundle exec jekyll serve --host=0.0.0.0 --drafts --incremental --limit_posts $1
+  fi
+}
+
+# macOS aliases
+case $OSTYPE in
+  darwin*)
+    alias chrome="/Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome"
+    alias flushdns='sudo killall -HUP mDNSResponder' # https://support.apple.com/en-au/HT202516
+    alias simulator="open -a Simulator.app"
+    ;;
+esac
+
+colorflag="-G"
+alias ls="command ls ${colorflag}"
+alias l="ls -lhF ${colorflag}" # All files, in long format
+alias ll="l"
+alias la="ls -laF ${colorflag}" # All files inc dotfiles, in long format
+
+# Sort `ls` output by modification time, displayed in "long iso" format
+# https://www.cyberciti.biz/faq/ls-command-sort-the-output-by-last-modified-time-date/
+# http://giantdorks.org/alain/make-ls-output-date-in-long-iso-format-instead-of-short-month/
+case $OSTYPE in
+  linux-gnu)
+    alias lsm='ls -l --time-style=long-iso'
+    ;;
+  darwin*)
+    alias lsm='/usr/local/bin/gls -l --time-style=long-iso'
+    ;;
+esac
+
+alias ag='ag --hidden --ignore-dir .git --ignore "*.json" --ignore "*.svg" --ignore=*.min.js'
+alias agr='ag --ruby'
+alias agj='ag --js --coffee'
+alias agc='ag --sass --css'
+alias agh='ag --html --haml'
+alias h='heroku'
+alias brewski='brew update && brew upgrade && brew cleanup; brew doctor'
+
+if [ "${OSTYPE//[0-9.]/}" == "darwin" ]; then
+  m() { mvim -p ${1-.} }
+
+  if [[ "$ITERM_PROFILE" == "Course" ]]; then
+    export ATOM_HOME=~/.dotfiles/other_files/atom/course/;
+
+    if type "apm" > /dev/null; then
+      apm list --installed --bare > ${ATOM_HOME}package.list
+    fi
+  else
+    alias a="atom ."
+
+    if [ -d ~/.dotfiles/other_files/atom/default/ ]; then
+      export ATOM_HOME=~/.dotfiles/other_files/atom/default/;
+    fi
+  fi
+
+  alias x="gitx"
+fi
+
+alias sshkey='cat ~/.ssh/id_rsa.pub | pbcopy && echo "SSH Key copied to clipboard"'
+alias bne='curl wttr.in/brisbane'
+
+########################################### Functions ############################################
+
+case $OSTYPE in
+  linux-gnu)
+    alias c='cat'
+    ;;
+  darwin*)
+    c() { /bin/cat -n $* | ccat } # Colorizing `cat` (https://github.com/jingweno/ccat)
+    ;;
+esac
+
+replace() {
+  # Usage: replace foo bar **/*.rb
+  # Original function: https://github.com/thoughtbot/dotfiles/blob/master/bin/replace
+
+  find_this="$1"
+  shift
+  replace_with="$1"
+  shift
+
+  items=("${(@f)$(ag -l --nocolor "$find_this" "$@")}")
+  temp="${TMPDIR:-/tmp}/replace_temp_file.$$"
+
+  for item in $items; do
+    echo ✓ $item
+    sed "s/$find_this/$replace_with/g" "$item" > "$temp" && mv "$temp" "$item"
+  done
+}
+
+function npmls() {
+  npm ls --depth=0 "$@" 2>/dev/null
+}
+
+function npmlsg() {
+  npm ls -g --depth=0 "$@" 2>/dev/null
+}
+
+alias node_modules_folder_sizes='find . -name "node_modules" -type d -prune -print | xargs du -chs'
+
+case $OSTYPE in
+  darwin*)
+    function rm() {
+      local path
+      for path in "$@"; do
+        # Ignore any arguments
+        if [[ "$path" = -* ]]; then :
+        else
+          local dst=${path##*/}
+
+          # Append the time if necessary
+          while [ -e ~/.Trash/"$dst" ]; do
+            dst="$dst $RANDOM"
+          done
+
+          /bin/mv "$path" ~/.Trash/"$dst"
+        fi
+      done
+
+      echo ""
+    }
+
+    # http://br-mac.org/2013/07/fcd-um-atalho-para-mudar-o-diretorio-corrente-do-terminal-para-a-pasta-aberta-no-finder.html
+    fcd() {
+      pFinder=`osascript -e 'tell application "Finder" to if (count of Finder windows) > 0 then get POSIX path of (target of front Finder window as text)'`
+      [ -n "$pFinder" ] && cd "$pFinder"
+      pwd
+    }
+    ;;
+esac
+
+# Usage: aftermerge <branch> (default: master)
+aftermerge() {
+  branch=`git rev-parse --abbrev-ref HEAD`
+
+  git checkout ${1-master}
+  git pull --rebase
+  git branch -d $branch
+
+  clear
+
+  git branch -a
+}
+
+# Convert Ruby 1.8 to 1.9 hash syntax
+ruby_new_hash_syntax() {
+  perl -pi -e 's/:([\w\d_]+)(\s*)=>/\1:/g' ${1}**/*.rb
+}
+
+# Git History - http://goo.gl/BzdgE3
+gh() {
+  if [ "$#" -ne 2 ]; then
+    echo "Usage: $0 PATTERN FILE"
+    echo
+    echo '  Show all of the various changes to a single line in a specified file over the entire' \
+         'git history'
+    echo
+    return 1
+  fi
+
+  for c in $(git log -G "$1" --format=%H -- $2); do
+    git --no-pager grep -e "$1" $c -- $2
+  done
+}
+
+hl() {
+  theme_folder=`brew --cellar highlight`/`brew list --versions highlight | tr ' ' '\n' | grep -e '^\d' | head -n 1`/share/highlight/themes/
+
+  if ! [ -f $theme_folder/lucascaton.theme ]; then
+    cp ~/.dotfiles/other_files/highlight/themes/lucascaton.theme $theme_folder
+  fi
+
+  highlight -O rtf $1 --font "Hack Regular Nerd Font Complete" --font-size 48 \
+    --src-lang html --style lucascaton # | pbcopy
+}
+
+docker-clear() {
+  docker container prune --force
+
+  if [ "$(docker images -f 'dangling=true' -q | wc -l)" -gt "0" ]; then
+    docker image rm $(docker images -f "dangling=true" -q)
+  fi
+}
+
+############################################## PS1 ###############################################
+
+precmd() {
+  if [[ "$ITERM_PROFILE" == "Course" ]]; then
+    export PROMPT='%{$fg_no_bold[green]%}%1~ $(git_prompt_info)%{$reset_color%}» '
+    export RPROMPT=''
+    return;
+  else
+    set_powerlevel9k_custom_env_vars;
+  fi
+}
+
+[ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
