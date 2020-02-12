@@ -10,5 +10,5 @@ This repository contains all my dotfiles, which should work on **Linux**.
 
 Firstly, install [oh my zsh](https://github.com/robbyrussell/oh-my-zsh). Then, run:
 
-    git clone https://github.com/lucascaton/dotfiles.git ~/.dotfiles
+    git clone https://github.com/phpricardo/dotfiles.git ~/.dotfiles
     ~/.dotfiles/install.sh
